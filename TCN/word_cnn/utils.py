@@ -11,8 +11,8 @@ it is the number of segments to speed up computation.
 The goal of PTB is to train a language model to predict the next word.
 """
 
-
-def data_generator(args):
+#读取args.data数据集数据 args.data是一个文件路径 将源文件转化为一个语料库
+def data_generator(args):           
     if os.path.exists(args.data + "/corpus") and not args.corpus:
         corpus = pickle.load(open(args.data + '/corpus', 'rb'))
     else:
@@ -35,7 +35,7 @@ class Dictionary(object):
     def __len__(self):
         return len(self.idx2word)
 
-
+#os.path.join方法是路径连接获得 \path\train.txt
 class Corpus(object):
     def __init__(self, path):
         self.dictionary = Dictionary()
