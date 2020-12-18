@@ -12,9 +12,10 @@ from TCN.word_cnn.model import *
 import pickle
 from random import randint
 
+#建立解析对象
+parser = argparse.ArgumentParser(description='Sequence Modeling - Word-level Language Modeling') 
 
-parser = argparse.ArgumentParser(description='Sequence Modeling - Word-level Language Modeling')
-
+#给实例增加属性
 parser.add_argument('--batch_size', type=int, default=16, metavar='N',
                     help='batch size (default: 16)')
 parser.add_argument('--cuda', action='store_false',
@@ -53,6 +54,8 @@ parser.add_argument('--seq_len', type=int, default=80,
                     help='total sequence length, including effective history (default: 80)')
 parser.add_argument('--corpus', action='store_true',
                     help='force re-make the corpus (default: False)')
+
+#属性给予args实例：把parser中设置的所有"add_argument"给返回到args子类实例当中， 那么parser中增加的属性内容都会在args实例中，使用即可。
 args = parser.parse_args()
 
 # Set the random seed manually for reproducibility.
@@ -62,8 +65,10 @@ if torch.cuda.is_available():
         print("WARNING: You have a CUDA device, so you should probably run with --cuda")
 
 print(args)
-corpus = data_generator(args)
+#方法来自utils包  获取args.data的数据
+corpus = data_generator(args) 
 eval_batch_size = 10
+#批次化训练集交叉验证集和测试集
 train_data = batchify(corpus.train, args.batch_size, args)
 val_data = batchify(corpus.valid, eval_batch_size, args)
 test_data = batchify(corpus.test, eval_batch_size, args)
@@ -85,13 +90,16 @@ if args.cuda:
 criterion = nn.CrossEntropyLoss()
 
 lr = args.lr
+#optimizer= Adam(model.parameters(),lr = LR)
 optimizer = getattr(optim, args.optim)(model.parameters(), lr=lr)
 
-
+#评估测试函数，返回一个偏差指标
 def evaluate(data_source):
+    #区分model.train()和model.eval()的区别，训练时用train，测试时用eval，eval会把BatchNorm和DropOut固定住。相当于测试时不划分batch，并且没有dropout的残缺网络而用完整网络。
     model.eval()
     total_loss = 0
     processed_data_size = 0
+    ## with关键字能够自动帮忙执行 close 方法,不能处理异常   torch.no_grad()是一个上下文管理器，被该语句 wrap 起来的部分将不会track 梯度。因为不需更新网络所以，都包起来，不让track梯度。
     with torch.no_grad():
         for i in range(0, data_source.size(1) - 1, args.validseqlen):
             if i + args.seq_len - args.validseqlen >= data_source.size(1) - 1:
@@ -101,6 +109,7 @@ def evaluate(data_source):
 
             # Discard the effective history, just like in training
             eff_history = args.seq_len - args.validseqlen
+            #contiguous是配合view使用的，view是用来改变tensor的形状的
             final_output = output[:, eff_history:].contiguous().view(-1, n_words)
             final_target = targets[:, eff_history:].contiguous().view(-1)
 
@@ -111,7 +120,7 @@ def evaluate(data_source):
             processed_data_size += data.size(1) - eff_history
         return total_loss / processed_data_size
 
-
+#训练函数
 def train():
     # Turn on training mode which enables dropout.
     global train_data
