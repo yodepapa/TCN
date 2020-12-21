@@ -46,7 +46,7 @@ class TemporalBlock(nn.Module):
         res = x if self.downsample is None else self.downsample(x)
         return self.relu(out + res)   #一个残差
 
-
+#将Block设置不同的输入输出channals，和不同的dilation值，堆叠在一起。
 class TemporalConvNet(nn.Module):
     #num_channels是个数组
     def __init__(self, num_inputs, num_channels, kernel_size=2, dropout=0.2):
